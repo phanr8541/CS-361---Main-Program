@@ -1,6 +1,6 @@
 title = ("🏆 Welcome to the Ultimate Sports & Trading Cards Manager 🃏")
 print(title)
-print("    Keep track of your cards in your personal collection!")
+print("     Keep track of your cards in a personal collection!")
 class Card:
     def __init__(self, name, set_name, year, value):
         self.name = name

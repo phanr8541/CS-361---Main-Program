@@ -1,9 +1,11 @@
 import os
+import csv
 
 title = ("🏆 Welcome to the Ultimate Sports & Trading Cards Manager 🃏")
 print(title)
 print("     Keep track of your cards in a personal collection!")
 print("+------------------------------------------------------------+")
+
 class Card:
     def __init__(self, name, set_name, year, value):
         self.name = name
@@ -48,48 +50,63 @@ class Collection:
             print("\nInvalid input. Please try again.")
 
     def save_to_file(self):
-        with open('card_collection.txt', 'w') as file:
+        with open('card_collection.csv', 'w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(['Name', 'Year', 'Set', 'Value'])  # Write header
             for card in self.cards:
-                file.write(f"{card.name} | Year: {card.year} | Set: {card.set_name} | "
-                           f"Value: ${card.value:.2f}\n")
-        print("Collection saved to 'card_collection.txt'.")
+                writer.writerow([card.name, card.year, card.set_name, card.value])
+        print("Collection saved to 'card_collection.csv'.")
 
     def load_from_file(self):
-        if os.path.exists('card_collection.txt'):
-            with open('card_collection.txt', 'r') as file:
-                for line in file:
-                    # Strip any whitespace and split by ' | '
-                    parts = line.strip().split(' | ')
-                    if len(parts) == 4:
-                        # Parse individual fields correctly
-                        name_part = parts[0]
-                        year_part = parts[1].replace("Year: ", "")
-                        set_part = parts[2].replace("Set: ", "")
-                        value_part = parts[3].replace("Value: $", "")
-
+        if os.path.exists('card_collection.csv'):
+            with open('card_collection.csv', 'r', newline='') as file:
+                reader = csv.reader(file)
+                next(reader)  # Skip header
+                for row in reader:
+                    if len(row) == 4:
                         try:
-                            year = year_part.strip()
-                            value = float(value_part.strip())
-                            card = Card(name_part.strip(), set_part.strip(), year, value)
+                            name_part = row[0].strip()
+                            year = row[1].strip()
+                            set_part = row[2].strip()
+                            value = float(row[3].strip())
+                            card = Card(name_part, set_part, year, value)
                             self.cards.append(card)
                         except ValueError:
                             print("Error loading card data; skipping entry.")
-            print("Loaded existing collection from 'card_collection.txt'.")
+            print("Loaded existing collection from 'card_collection.csv'.")
         else:
             print("No existing collection found. Starting a new collection.")
 
+    def add_cards_from_file(self, file_path):
+        if os.path.exists(file_path):
+            with open(file_path, 'r', newline='') as file:
+                reader = csv.reader(file)
+                next(reader)  # Skip header
+                for row in reader:
+                    if len(row) == 4:
+                        try:
+                            name_part = row[0].strip()
+                            year = row[1].strip()
+                            set_part = row[2].strip()
+                            value = float(row[3].strip())
+                            card = Card(name_part, set_part, year, value)
+                            self.add_card(card)  # Use the existing add_card method
+                        except ValueError:
+                            print(f"Error converting value '{row[3]}'; skipping entry.")
+        else:
+            print(f"The file {file_path} does not exist.")
 
 def display_menu():
-
     print()
     print("  Please enter the correlating number")
     print("  to proceed in the selected option.")
     print()
-    print("1. Add a Card")
-    print("2. View Collection")
-    print("3. Delete a Card")
-    print("4. About")
-    print("5. Quit")
+    print("1. Add a Card Manually")
+    print("2. Add Cards from a CSV File")
+    print("3. View Collection")
+    print("4. Delete a Card")
+    print("5. About")
+    print("6. Quit")
 
 def show_about():
     print("\n+------------------- About -------------------+")
@@ -109,7 +126,7 @@ def show_about():
     print("    a confirmation prompt to prevent accidental")
     print("    deletions.")
     print("  - Automatic saving and loading of your")
-    print("    collection data to/from 'card_collection.txt'.")
+    print("    collection data to/from 'card_collection.csv'.")
     print()
     print("  This program is ideal for collectors,")
     print("  enthusiasts, or anyone looking to manage")
@@ -122,7 +139,6 @@ def show_about():
     print("  For feedback or suggestions, please contact:")
     print("  phanri@oregonstate.edu")
     print("+--------------------------------------------+")
-
 
 def main():
     collection = Collection()
@@ -141,9 +157,13 @@ def main():
             collection.add_card(card)
 
         elif choice == "2":
-            collection.view_cards()
+            file_path = input("Enter the path to the CSV file: ")
+            collection.add_cards_from_file(file_path)
 
         elif choice == "3":
+            collection.view_cards()
+
+        elif choice == "4":
             collection.view_cards()
             try:
                 index = int(input("\nEnter the card number to delete: ")) - 1
@@ -151,16 +171,15 @@ def main():
             except ValueError:
                 print("\nPlease enter a valid number.")
 
-        elif choice == "4":
+        elif choice == "5":
             show_about()
 
-        elif choice == "5":
+        elif choice == "6":
             print("Goodbye!")
             break
 
         else:
             print("\nInvalid option, please try again.")
-
 
 if __name__ == "__main__":
     main()

@@ -1,5 +1,11 @@
+import zmq
 import os
 import csv
+
+# Initialize ZeroMQ context and socket for the wishlist
+context = zmq.Context()
+wishlist_socket = context.socket(zmq.REQ)
+wishlist_socket.connect("tcp://localhost:5556")
 
 title = ("🏆 Welcome to the Ultimate Sports & Trading Cards Manager 🃏")
 print(title)
@@ -48,6 +54,16 @@ class Collection:
                 print("\nDeletion cancelled.")
         else:
             print("\nInvalid input. Please try again.")
+
+    def add_card_to_wishlist(self, card):
+        wishlist_socket.send_json({
+            'name': card.name,
+            'set_name': card.set_name,
+            'year': card.year,
+            'value': card.value
+        })
+        message = wishlist_socket.recv_string()
+        print(message)
 
     def save_to_file(self):
         with open('card_collection.csv', 'w', newline='') as file:
@@ -105,8 +121,9 @@ def display_menu():
     print("2. Add Cards from a CSV File")
     print("3. View Collection")
     print("4. Delete a Card")
-    print("5. About")
-    print("6. Quit")
+    print("5. Add Card to Wishlist")  # New option
+    print("6. About")
+    print("7. Quit")
 
 def show_about():
     print("\n+------------------- About -------------------+")
@@ -172,9 +189,17 @@ def main():
                 print("\nPlease enter a valid number.")
 
         elif choice == "5":
-            show_about()
+            name = input("Card Name: ")
+            set_name = input("Set Name: ")
+            year = input("Year: ")
+            value = float(input("Value: $"))
+            card = Card(name, set_name, year, value)
+            collection.add_card_to_wishlist(card)  # Send to wishlist service
 
         elif choice == "6":
+            show_about()
+
+        elif choice == "7":
             print("Goodbye!")
             break
 

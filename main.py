@@ -13,10 +13,14 @@ user_socket.connect("tcp://localhost:5556")  # User microservice
 grading_socket = context.socket(zmq.REQ)
 grading_socket.connect("tcp://localhost:5560")  # Connect to the card grading microservice
 
+value_socket = context.socket(zmq.REQ)
+value_socket.connect("tcp://localhost:5559")  # Connect to the value adjustment microservice
+
 title = ("🏆 Welcome to the Ultimate Sports & Trading Cards Manager 🃏")
 print(title)
 print("     Keep track of your cards in a personal collection!")
 print("+------------------------------------------------------------+")
+
 
 # Card and Collection classes remain unchanged from the current code
 class Card:
@@ -30,6 +34,7 @@ class Card:
     def __str__(self):
         grade_display = f" - Grade: {self.grade}" if self.grade else ""
         return f"{self.name} - {self.year} {self.set_name} - ${self.value:.2f}{grade_display}"
+
 
 class Collection:
     def __init__(self):
@@ -111,6 +116,7 @@ class Collection:
         else:
             print("No existing collection found. Starting a new collection.")
 
+
 # New Login Feature
 def login():
     """Login or create a new user profile."""
@@ -143,6 +149,28 @@ def login():
         else:
             print("Invalid choice. Please enter 1 or 2.")
 
+
+def update_card_value(card_name, new_value):
+    """Send a request to update a card's value."""
+    value_socket.send_json({
+        "command": "update",
+        "card_name": card_name,
+        "new_value": new_value
+    })
+    response = value_socket.recv_string()
+    print("\n" + response)
+
+
+def get_card_value(card_name):
+    """Send a request to retrieve a card's value."""
+    value_socket.send_json({
+        "command": "get_value",
+        "card_name": card_name
+    })
+    response = value_socket.recv_string()
+    print("\n" + response)
+
+
 def display_menu():
     print()
     print("  Please enter the correlating number")
@@ -154,9 +182,12 @@ def display_menu():
     print("4. Delete a Card")
     print("5. Add Card to Wishlist")
     print("6. Display Current Wishlist")
-    print("7. Grade a Card")  # New option
-    print("8. About")
-    print("9. Quit")
+    print("7. Grade a Card")
+    print("8. Update Card Value")  # New option
+    print("9. Get Card Value")  # New option
+    print("10. About")
+    print("11. Quit")
+
 
 def show_about():
     print("\n+------------------- About -------------------+")
@@ -167,6 +198,7 @@ def show_about():
     print("  and delete cards from your personal list.")
     print("  Developed by Richard Phan")
     print("+--------------------------------------------+")
+
 
 def main():
     # Perform login first
@@ -214,7 +246,6 @@ def main():
         elif choice == "6":
             collection.display_wishlist()
 
-
         elif choice == "7":
             collection.view_cards()  # Show the current collection for reference
             try:
@@ -243,15 +274,40 @@ def main():
             except ValueError:
                 print("\nInvalid input. Please enter a number.")
 
-        elif choice == "8":
+        elif choice == "8":  # Update card value
+            collection.view_cards()  # Show the current collection for reference
+            try:
+                index = int(input("\nEnter the card number to update value: ")) - 1
+                if 0 <= index < len(collection.cards):
+                    selected_card = collection.cards[index]
+                    print(f"Selected card: {selected_card}")
+                    new_value = float(input("Enter the new market value: $"))
+
+                    # Update value in microservice
+                    update_card_value(selected_card.name, new_value)
+
+                    # Update value locally
+                    selected_card.value = new_value
+                    collection.save_to_file()
+                else:
+                    print("\nInvalid card number.")
+            except ValueError:
+                print("\nInvalid input. Please enter a valid number.")
+
+        elif choice == "9":  # Retrieve card value
+            card_name = input("\nEnter the name of the card to get its value: ")
+            get_card_value(card_name)
+
+        elif choice == "10":
             show_about()
 
-        elif choice == "9":
+        elif choice == "11":
             print("Goodbye!")
             break
 
         else:
             print("\nInvalid option, please try again.")
+
 
 if __name__ == "__main__":
     main()
